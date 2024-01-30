@@ -1,0 +1,665 @@
+{% comment %} App Block 概要 {% endcomment %}
+{% comment %}
+  コレクションを選択できる
+  選択したコレクションを削除、または変更できる
+  選択したコレクションに対して、ランキングを表示する
+  ランキングライコンの種類や色などを自由に設定できるようにする
+{% endcomment %}
+
+{% comment %} UI {% endcomment %}
+<div class='block-margin app-wrapper'>
+  <div class='{% if block.settings.enable_slider %} is-slider {% else %} not-slider {{ block.settings.col_pc }} {{ block.settings.col_sp }} {% endif %}'>
+    {% if block.settings.ranking_collection == blank %}
+      {% comment %} 見出しが設定されていないときは非表示にする {% endcomment %}
+      {% for i in (1..6) %}
+        <div class='item-container'>
+          <div class='img-ratio img-container'>
+            {% comment %} ダミー画像を表示 {% endcomment %}
+            {{ 'product-' | append: forloop.index | placeholder_svg_tag }}
+          </div>
+          <h3 class='item-title'>商品{{ forloop.index }}</h3>
+          <p class='item-price'>¥1,000</p>
+        </div>
+      {% endfor %}
+
+    {% else %}
+      {%- comment -%}コレクション選択時{%- endcomment -%}
+      {% assign selected_collection = block.settings.ranking_collection %}
+      {% for product in selected_collection.products limit: block.settings.items_on_display %}
+        <div class='{% if block.settings.enable_slider %} item-container {% endif %}'>
+          <a
+            href='{{ product.url }}'
+            class='product_click {% if block.settings.mouse_over == 'opacity' %} hover:tw-opacity-70 {% endif %}'
+          >
+            <div class='product-click'>
+              {%- comment -%}商品画像{%- endcomment -%}
+              <div class='product-click-second'>
+                {%- if product.media[1] -%}
+                  {%- comment -%}2枚目の商品画像{%- endcomment -%}
+                  <img
+                    srcset='
+                      {%- if product.media[1].width >= 165 -%}{{ product.media[1] | image_url: '165x' }} 165w,{%- endif -%}
+                      {%- if product.media[1].width >= 360 -%}{{ product.media[1] | image_url: '360x' }} 360w,{%- endif -%}
+                      {%- if product.media[1].width >= 535 -%}{{ product.media[1] | image_url: '535x' }} 535w,{%- endif -%}
+                      {%- if product.media[1].width >= 750 -%}{{ product.media[1] | image_url: '750x' }} 750w,{%- endif -%}
+                      {%- if product.media[1].width >= 1070 -%}{{ product.media[1] | image_url: '1070x' }} 1070w,{%- endif -%}
+                      {%- if product.media[1].width >= 1500 -%}{{ product.media[1] | image_url: '1500x' }} 1500w,{%- endif -%}
+                    '
+                    src='{{ product.media[1] | image_url: '1500x' }}'
+                    alt='{{ product.title }}'
+                    {% if block.settings.image_ratio == 'fit' %}
+                      style='aspect-ratio: {{ product.featured_image.aspect_ratio }};'
+                    {% endif %}
+                    class='img-first {% if block.settings.img-ratio == 'fit' %} img-fit {% else %} img-ratio {% endif %}  {% if block.settings.mouse_over == 'second_image' %} img-second {% else %} img-else {% endif %}'
+                    width='{{ product.media[1].width }}'
+                    height='{{ product.media[1].height }}'
+                    loading='lazy'
+                  >
+                {%- endif -%}
+                {%- comment -%}1枚目の商品画像{%- endcomment -%}
+                <img
+                  srcset='
+                    {%- if product.featured_image.width >= 165 -%}{{ product.featured_image | image_url: '165x' }} 165w,{%- endif -%}
+                    {%- if product.featured_image.width >= 360 -%}{{ product.featured_image | image_url: '360x' }} 360w,{%- endif -%}
+                    {%- if product.featured_image.width >= 535 -%}{{ product.featured_image | image_url: '535x' }} 535w,{%- endif -%}
+                    {%- if product.featured_image.width >= 750 -%}{{ product.featured_image | image_url: '750x' }} 750w,{%- endif -%}
+                    {%- if product.featured_image.width >= 1070 -%}{{ product.featured_image | image_url: '1070x' }} 1070w,{%- endif -%}
+                    {%- if product.featured_image.width >= 1500 -%}{{ product.featured_image | image_url: '1500x' }} 1500w,{%- endif -%}
+                  '
+                  src='{{ product.featured_image | image_url: '1500x' }}'
+                  alt='{{ product.title }}'
+                  class='product_click img-ratio {% if block.settings.mouse_over == 'expand' %}  {% endif %}'
+                  width='{{ product.featured_image.width }}'
+                  height='{{ product.featured_image.height }}'
+                  loading='lazy'
+                >
+              </div>
+
+              {%- if block.settings.ranking_label_type == 'star' -%}
+                {%- comment -%}順位アイコン（ジグザグな円形）{%- endcomment -%}
+                <div class='icon {% case block.settings.ranking_position %} {% when "left-top" %} tw-left-2 tw-top-2 {% when "right-top" %} tw-right-2 tw-top-2 {% when "left-bottom" %} tw-left-2 tw-bottom-2 {% when "right-bottom" %} tw-right-2 tw-bottom-2 {% endcase %}'>
+                  <div class='relative'>
+                    <div
+                      class='icon-shaped index-{{ block.id }}'
+                      style='color: {{ block.settings.ranking_text_color }};'
+                    >
+                      {{ forloop.index }}
+                    </div>
+                    {%- case forloop.index -%}
+                      {%- when 1 -%}
+                        <div>
+                          {% render 'star',
+                            design_size: 48,
+                            icon_color: block.settings.ranking_color_first
+                          %}
+                        </div>
+                      {%- when 2 -%}
+                        <div>
+                          {% render 'star',
+                            design_size: 48,
+                            icon_color: block.settings.ranking_color_second
+                          %}
+                        </div>
+                      {%- when 3 -%}
+                        <div>
+                          {% render 'star',
+                            design_size: 48,
+                            icon_color: block.settings.ranking_color_third
+                          %}
+                        </div>
+                      {%- else -%}
+                        <div>
+                          {% render 'star',
+                            design_size: 48,
+                            icon_color: block.settings.ranking_color_others
+                          %}
+                        </div>
+                    {%- endcase -%}
+                  </div>
+                </div>
+
+                {% comment %} ここまでだよん！！！！！ {% endcomment %}
+                {% comment %} else if crownの場合 {% endcomment %}
+              {%- else -%}
+                {%- comment -%}順位アイコン（四角と円）{%- endcomment -%}
+                <div
+                  class='ranking-label {% if block.settings.ranking_label_type == "circle" %}ranking-label-circle{% endif %} {%- case block.settings.label_position -%} pos-{%- when "ul" -%} ul {%- when "ur" -%} ur {%- when "ll" -%} ll {%- when "lr" -%} lr {%- endcase -%}'
+                >
+                  <div class='index-{{ block.id }}'>{{ forloop.index }}</div>
+                </div>
+              {%- endif -%}
+            </div>
+
+            {%- comment -%}商品名{%- endcomment -%}
+            <h3 class='product-title-{{ block.id }} !tw-mb-1'>{{ product.title }}</h3>
+
+            {%- comment -%}値段{%- endcomment -%}
+            <div class='tw-flex tw-space-x-2 tw-items-baseline'>
+              <p class='product-price-{{ block.id }} {% if product.available == false %} tw-opacity-50 {% endif %}'>
+                {{ product.price | money }}
+              </p>
+              {% if product.compare_at_price and product.compare_at_price > product.price %}
+                <p class='tw-line-through product-compare-at-price-{{ block.id }}'>
+                  {{ product.compare_at_price | money }}
+                </p>
+              {% endif %}
+              {% if product.available == false %}
+                <p class='product-sold-out-{{ block.id }}'>{{ block.settings.sold_out_text }}</p>
+              {% endif %}
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+{%- style -%}
+      {% comment %} app wrapper {% endcomment %}
+
+      {%- comment -%}ブロックの余白{%- endcomment -%}
+    #shopify-block-{{ block.id }}.sa-022-ur-ranking-app .block-margin {
+    margin: 0 {{ block.settings.block_margin_x }}px;
+    margin-top: {{ block.settings.block_margin_top }}px;
+    margin-bottom: {{ block.settings.block_margin_bottom }}px;
+    }
+
+    .mx-auto {
+      margin-left:auto;
+      margin-right:auto;
+    }
+
+    .is-slider {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      width: 100%;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      {% case block.settings.col_sp %}
+        {% when 'sp-grid-cols-1' %}
+          width: 90%;
+        {% when 'sp-grid-cols-2' %}
+      {% endcase %}
+      height: auto;
+      margin-right: {{ block.settings.grid_gap_x }}px;
+    }
+
+  #shopify-block-{{ block.id }}.sa-022-ur-ranking-app .not-slider {
+    display: grid;
+    gap: {{ block.settings.item_margin_y }}px {{ block.settings.item_margin_x }}px;
+  }
+
+  .sp-grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr));}
+  .sp-grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .sp-grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .sp-grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .sp-grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr));}
+
+  @media (min-width:768px){
+    .pc-grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr));}
+    .pc-grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .pc-grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .pc-grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr));}
+    .pc-grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr));}
+  }
+
+    {%- comment -%}商品間の余白{%- endcomment -%}
+    .item-container {
+      width: 100%;
+      height: auto;
+      border-width:1px;
+      {% case block.settings.col_sp %}
+        {% when 'sp-grid-cols-1' %}
+          width: 90%;
+        {% when 'sp-grid-cols-2' %}
+      {% endcase %}
+    }
+
+    {%- comment -%}商品画像の縦横比{%- endcomment -%}
+    #shopify-block-{{ block.id }}.sa-022-ur-ranking-app .img-ratio {
+      {% case block.settings.img-ratio %}
+      {% when 'wide' %}
+        aspect-ratio: 16/9;
+        object-fit: cover;
+      {% when 'square' %}
+        aspect-ratio: 1/1;
+        object-fit: cover;
+      {% when 'portrait' %}
+        aspect-ratio: 4/5;
+        object-fit: cover;
+      {% endcase %}
+      width: 100%;
+      height: auto;
+    }
+
+    #shopify-block-{{ block.id }}.sa-022-ur-ranking-app .img-container {
+      border:1px solid #e5e7eb;
+    }
+
+    {%- comment -%}商品名{%- endcomment -%}
+    #shopify-block-{{ block.id }}.sa-022-ur-ranking-app .item-title {
+      font-size: {{ block.settings.item_text_size }}px;
+      color: {{ block.settings.item_text_color }};
+    }
+
+    {%- comment -%}値段{%- endcomment -%}
+    #shopify-block-{{ block.id }}.sa-022-ur-ranking-app .item-price {
+      font-size: {{ block.settings.price_text_size }}px;
+      color: {{ block.settings.price_text_color }};
+    }
+
+
+    .product_click {
+      display:block;
+    }
+
+    .product_click:hover {
+      {% if block.settings.mouse_over == 'opacity' %}
+      opacity:.7
+      {% else %}
+      transform: scale(1.1, 1.1);
+      transition-duration:.5s;
+      {% endif %}
+    }
+
+    .product-click {
+      position:relative;
+      margin-bottom: 8px;
+    }
+    .product-click-second {
+      position: relative;
+      overflow:hidden;
+    }
+    .product-click-second {
+      position: relative;
+      overflow:hidden;
+    }
+
+    .img-first {
+      position:absolute
+      transition-duration:.5s;
+    }
+
+    .img-second {
+      transition-duration:.5s;
+      z-index: 1;
+      opacity: 0;
+    }
+    .img-second:hover {
+      opacity: 1;
+    }
+
+
+    .img-fit {
+      object-fit:cover
+      width: 100%;
+      height: 100%;
+    }
+    .img-else {
+      visibility:hidden
+    }
+
+    .icon {
+      position: absolute;
+      z-index: 2;
+    }
+
+    .relative {
+      position: relative;
+    }
+    .icon-shaped {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      displya: flex;
+      justify-content: center;
+      align-items:center
+      font-weight:600;
+      font-size:20px;
+      line-height:28px
+    }
+
+    .ranking-label {
+      {%- case forloop.index -%}
+        {% when 1 %}
+          background-color: {{ block.settings.ranking_color_first }};
+        {% when 2 %}
+          background-color: {{ block.settings.ranking_color_second }};
+        {% when 3 %}
+          background-color: {{ block.settings.ranking_color_third }};
+        {% else %}
+          background-color: {{ block.settings.ranking_color_others }};
+      {%- endcase -%}
+      color: {{ block.settings.ranking_text_color }};
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      justify-content: center;
+      font-size:20px;
+      line-height:28px;
+      font-weight:600;
+      z-index: 2;
+    }
+
+    .ranking-label-circle {
+      border-radius:9999px;
+      width: 36px;
+      height: 36px;
+    }
+
+    .pos-ul {
+      left:8px;
+      top: 8px;
+    }
+    .pos-ur {
+      right:8px;
+      top: 8px;
+    }
+    .pos-ll {
+      left:8px;
+      bottom: 8px
+    }
+    .pos-lr {
+      right:8px;
+      bottom: 8px
+    }
+
+
+      {%- comment -%}スライダー表示の幅と余白{%- endcomment -%}
+
+      {%- comment -%}スライダー表示のスクロールバーを非表示{%- endcomment -%}
+
+      {%- comment -%}割引前価格{%- endcomment -%}
+
+      {%- comment -%}売り切れ{%- endcomment -%}
+
+
+
+      {%- comment -%}以下でPC表示での最適化{%- endcomment -%}
+
+      {%- comment -%}ブロックの余白{%- endcomment -%}
+
+      {%- comment -%}商品間の余白{%- endcomment -%}
+
+      {%- comment -%}スライダー表示の余白{%- endcomment -%}
+
+      {%- comment -%}商品名{%- endcomment -%}
+
+      {%- comment -%}値段{%- endcomment -%}
+
+      {%- comment -%}割引前価格{%- endcomment -%}
+
+      {%- comment -%}売り切れ{%- endcomment -%}
+{%- endstyle -%}
+
+{% schema %}
+{
+  "name": "t:ranking_collection.name",
+  "class": "sa-022-ur-ranking-app",
+  "target": "section",
+  "stylesheet": "style.css",
+  "settings": [
+    {
+      "label": "t:ranking_collection.settings.choose_collection",
+      "id": "ranking_collection",
+      "type": "collection"
+    },
+    {
+      "type": "header",
+      "content": "t:ranking_collection.settings.ranking_label.heading"
+    },
+    {
+      "label": "t:ranking_collection.settings.ranking_label.type",
+      "id": "ranking_label_type",
+      "type": "select",
+      "options": [
+        {
+          "value": "rectangle",
+          "label": "t:ranking_collection.settings.ranking_label.type_rect"
+        },
+        { "value": "circle", "label": "t:ranking_collection.settings.ranking_label.type_circle" },
+        { "value": "star", "label": "t:ranking_collection.settings.ranking_label.type_star" },
+        { "value": "crown", "label": "t:ranking_collection.settings.ranking_label.type_crown" }
+      ],
+      "default": "rectangle"
+    },
+    {
+      "label": "t:ranking_collection.settings.ranking_label.color.text",
+      "id": "ranking_text_color",
+      "type": "color",
+      "default": "#FFFFFF"
+    },
+    {
+      "label": "t:ranking_collection.settings.ranking_label.color.first",
+      "id": "ranking_color_first",
+      "type": "color",
+      "default": "#A08E2B"
+    },
+    {
+      "label": "t:ranking_collection.settings.ranking_label.color.second",
+      "id": "ranking_color_second",
+      "type": "color",
+      "default": "#9E9E9E"
+    },
+    {
+      "label": "t:ranking_collection.settings.ranking_label.color.third",
+      "id": "ranking_color_third",
+      "type": "color",
+      "default": "#9E9E9E"
+    },
+    {
+      "label": "t:ranking_collection.settings.ranking_label.color.others",
+      "id": "ranking_color_others",
+      "type": "color",
+      "default": "#000000"
+    },
+    {
+      "label": "t:ranking_collection.settings.ranking_label.position",
+      "id": "label_position",
+      "type": "select",
+      "options": [
+        {
+          "value": "ul",
+          "label": "t:ranking_collection.settings.ranking_label.position_upper_left"
+        },
+        {
+          "value": "ur",
+          "label": "t:ranking_collection.settings.ranking_label.position_upper_right"
+        },
+        {
+          "value": "ll",
+          "label": "t:ranking_collection.settings.ranking_label.position_lower_left"
+        },
+        {
+          "value": "lr",
+          "label": "t:ranking_collection.settings.ranking_label.position_lower_right"
+        }
+      ],
+      "default": "ul"
+    },
+    {
+      "type": "header",
+      "content": "t:ranking_collection.settings.collection_layout.heading"
+    },
+    {
+      "label": "t:ranking_collection.settings.collection_layout.item_number",
+      "id": "items_on_display",
+      "type": "range",
+      "min": 1,
+      "max": 50,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "label": "t:ranking_collection.settings.collection_item.col_pc",
+      "id": "col_pc",
+      "type": "select",
+      "options": [
+        { "value": "pc-grid-cols-1", "label": "1" },
+        { "value": "pc-grid-cols-2", "label": "2" },
+        { "value": "pc-grid-cols-3", "label": "3" },
+        { "value": "pc-grid-cols-4", "label": "4" },
+        { "value": "pc-grid-cols-5", "label": "5" }
+      ],
+      "default": "pc-grid-cols-4"
+    },
+    {
+      "label": "t:ranking_collection.settings.collection_item.col_sp",
+      "id": "col_sp",
+      "type": "select",
+      "options": [
+        { "value": "sp-grid-cols-1", "label": "1" },
+        { "value": "sp-grid-cols-2", "label": "2" },
+        { "value": "sp-grid-cols-3", "label": "3" },
+        { "value": "sp-grid-cols-4", "label": "4" },
+        { "value": "sp-grid-cols-5", "label": "5" }
+      ],
+      "default": "sp-grid-cols-4"
+    },
+    {
+      "label": "t:ranking_collection.settings.collection_item.margin_x",
+      "id": "item_margin_x",
+      "type": "range",
+      "min": 1,
+      "max": 60,
+      "unit": "px",
+      "step": 1,
+      "default": 16
+    },
+    {
+      "label": "t:ranking_collection.settings.collection_item.margin_y",
+      "id": "item_margin_y",
+      "type": "range",
+      "min": 1,
+      "max": 60,
+      "unit": "px",
+      "step": 1,
+      "default": 24
+    },
+    {
+      "label": "t:ranking_collection.settings.collection_item.show_slider",
+      "id": "enable_slider",
+      "type": "checkbox",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:ranking_collection.settings.item_card.header"
+    },
+    {
+      "label": "t:ranking_collection.settings.item_card.ratio.label",
+      "id": "img_ratio",
+      "type": "select",
+      "options": [
+        { "value": "wide", "label": "t:ranking_collection.settings.item_card.ratio.wide" },
+        { "value": "square", "label": "t:ranking_collection.settings.item_card.ratio.square" },
+        { "value": "portrait", "label": "t:ranking_collection.settings.item_card.ratio.portrait" },
+        { "value": "fit", "label": "t:ranking_collection.settings.item_card.ratio.fit" }
+      ],
+      "default": "fit"
+    },
+    {
+      "label": "t:ranking_collection.settings.item_card.mouse_over.label",
+      "id": "mouse_over",
+      "type": "select",
+      "options": [
+        {
+          "value": "opacity",
+          "label": "t:ranking_collection.settings.item_card.mouse_over.lower_opacity"
+        },
+        { "value": "expand", "label": "t:ranking_collection.settings.item_card.mouse_over.expand" },
+        {
+          "value": "second_image",
+          "label": "t:ranking_collection.settings.item_card.mouse_over.second_image"
+        }
+      ],
+      "default": "opacity"
+    },
+    {
+      "label": "t:ranking_collection.settings.item_card.item_text_size",
+      "id": "item_text_size",
+      "type": "range",
+      "min": 8,
+      "max": 26,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "label": "t:ranking_collection.settings.item_card.text_color",
+      "id": "item_text_color",
+      "type": "color",
+      "default": "#EFEFEF"
+    },
+    {
+      "label": "t:ranking_collection.settings.item_card.price_text_size",
+      "id": "price_text_size",
+      "type": "range",
+      "min": 8,
+      "max": 26,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "label": "t:ranking_collection.settings.item_card.price_text_color",
+      "id": "price_text_color",
+      "type": "color",
+      "default": "#121212"
+    },
+    {
+      "label": "t:ranking_collection.settings.item_card.sold_out_text",
+      "id": "sold_out_text",
+      "type": "text",
+      "default": "Sold-out"
+    },
+    {
+      "type": "header",
+      "content": "t:ranking_collection.settings.block_margin.header"
+    },
+    {
+      "label": "t:ranking_collection.settings.block_margin.top",
+      "id": "block_margin_top",
+      "type": "range",
+      "min": -80,
+      "max": 160,
+      "step": 8,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "label": "t:ranking_collection.settings.block_margin.bottom",
+      "id": "block_margin_bottom",
+      "type": "range",
+      "min": -80,
+      "max": 160,
+      "step": 8,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "label": "t:ranking_collection.settings.block_margin.horizontal",
+      "id": "block_margin_x",
+      "type": "range",
+      "min": 0,
+      "max": 60,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "t:ranking_collection.settings.display_setting.header"
+    },
+    {
+      "type": "checkbox",
+      "id": "display_setting_checkbox",
+      "label": "t:ranking_collection.settings.display_setting.paragraph",
+      "default": false,
+      "info": "t:ranking_collection.settings.display_setting.info"
+    }
+  ]
+}
+{% endschema %}
